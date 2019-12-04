@@ -7,6 +7,7 @@ var localStream;
 var pc;
 var remoteStream;
 var turnReady;
+var hasMedia = false;
 
 var pcConfig = {
   'iceServers': [{
@@ -112,12 +113,50 @@ var mobileConstraints = {
 if (/Android|iPhone|iPad/i.test(navigator.userAgent)) constraints = mobileConstraints;
 else constraints = desktopConstraints;
 
-navigator.mediaDevices
+if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+  console.log("enumerateDevices() not supported.");
+}
+
+// List cameras and microphones.
+
+navigator.mediaDevices.enumerateDevices()
+.then(function(devices, hasMedia) {
+  devices.forEach(function(device, hasMedia) {
+    console.log(device.kind + ": " + device.label +
+                " id = " + device.deviceId);
+    if(device.kind === 'videoinput') hasMedia = true;
+    mediacheck(hasMedia);
+  });
+})
+.catch(function(err) {
+  console.log(err.name + ": " + err.message);
+});
+
+function mediacheck(hasMedia) {
+  if(hasMedia) {
+    navigator.mediaDevices
+    .getUserMedia(constraints)
+    .then(gotStream)
+    .catch(function(e) {
+    alert('getUserMedia() error: ' + e.name);
+    });
+  }
+  
+  else {
+    console.log("Media not available on this device");
+    sendMessage('got user media');
+    if (isInitiator) {
+      maybeStart(hasMedia);
+    }
+  }
+}
+
+/*navigator.mediaDevices
 .getUserMedia(constraints)
 .then(gotStream)
 .catch(function(e) {
-  alert('getUserMedia() error: ' + e.name);
-});
+alert('getUserMedia() error: ' + e.name);
+});*/
 
 function gotStream(stream) {
   console.log('Adding local stream.');
@@ -125,7 +164,7 @@ function gotStream(stream) {
   localVideo.srcObject = stream;
   sendMessage('got user media');
   if (isInitiator) {
-    maybeStart();
+    maybeStart(hasMedia);
   }
 }
 
@@ -141,12 +180,12 @@ console.log('Getting user media with constraints', constraints);
   );
 }*/
 
-function maybeStart() {
+function maybeStart(hasMedia) {
   console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady);
-  if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
+  if (!isStarted && isChannelReady) {
     console.log('>>>>>> creating peer connection');
     createPeerConnection();
-    pc.addStream(localStream);
+    if (hasMedia) pc.addStream(localStream);
     isStarted = true;
     console.log('isInitiator', isInitiator);
     if (isInitiator) {
