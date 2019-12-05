@@ -69,10 +69,10 @@ function sendMessage(message) {
 socket.on('message', function(message) {
   console.log('Client received message:', message);
   if (message === 'got user media') {
-    maybeStart();
+    maybeStart(hasMedia);
   } else if (message.type === 'offer') {
     if (!isInitiator && !isStarted) {
-      maybeStart();
+      maybeStart(hasMedia);
     }
     pc.setRemoteDescription(new RTCSessionDescription(message));
     doAnswer();
@@ -122,13 +122,13 @@ if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
 
 navigator.mediaDevices.enumerateDevices()
 .then(function(devices, hasMedia) {
-  devices.forEach(temp = function(device, hasMedia) {
+  devices.forEach(hasMedia = () => function(device) {
     console.log(device.kind + ": " + device.label +
                 " id = " + device.deviceId);
     if(device.kind === 'videoinput') hasMedia = true;
     return hasMedia;
   });
-  mediacheck(temp);
+  mediacheck(hasMedia);
 })
 .catch(function(err) {
   console.log(err.name + ": " + err.message);
@@ -138,7 +138,7 @@ function mediacheck(hasMedia) {
   if(hasMedia) {
     navigator.mediaDevices
     .getUserMedia(constraints)
-    .then(gotStream)
+    .then(gotStream, hasMedia)
     .catch(function(e) {
     alert('getUserMedia() error: ' + e.name);
     });
@@ -159,7 +159,7 @@ function mediacheck(hasMedia) {
 alert('getUserMedia() error: ' + e.name);
 });*/
 
-function gotStream(stream) {
+function gotStream(stream, hasMedia) {
   console.log('Adding local stream.');
   localStream = stream;
   localVideo.srcObject = stream;
@@ -185,7 +185,7 @@ function maybeStart(hasMedia) {
   console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady);
   if (!isStarted && isChannelReady) {
     console.log('>>>>>> creating peer connection');
-    createPeerConnection();
+    createPeerConnection(hasMedia);
     if (hasMedia) pc.addStream(localStream);
     isStarted = true;
     console.log('isInitiator', isInitiator);
@@ -201,12 +201,12 @@ window.onbeforeunload = function() {
 
 /////////////////////////////////////////////////////////
 
-function createPeerConnection() {
+function createPeerConnection(hasMedia) {
   try {
     pc = new RTCPeerConnection(null);
     pc.onicecandidate = handleIceCandidate;
-    pc.onaddstream = handleRemoteStreamAdded;
-    pc.onremovestream = handleRemoteStreamRemoved;
+    if (!hasMedia) pc.onaddstream = handleRemoteStreamAdded;
+    if (!hasMedia) pc.onremovestream = handleRemoteStreamRemoved;
     console.log('Created RTCPeerConnnection');
   } catch (e) {
     console.log('Failed to create PeerConnection, exception: ' + e.message);
@@ -253,7 +253,7 @@ function setLocalAndSendMessage(sessionDescription) {
 }
 
 function onCreateSessionDescriptionError(error) {
-  trace('Failed to create session description: ' + error.toString());
+  console.trace('Failed to create session description: ' + error.toString());
 }
 
 /*function requestTurn(turnURL) {
