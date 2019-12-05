@@ -5,9 +5,7 @@ var isInitiator = false;
 var isStarted = false;
 var localStream;
 var pc;
-var remoteStream;
 var turnReady;
-var hasMedia = false;
 
 var pcConfig = {
   'iceServers': [{
@@ -92,10 +90,8 @@ socket.on('message', function(message) {
 ////////////////////////////////////////////////////
 
 var localVideo = document.querySelector('#localVideo');
-var remoteVideo = document.querySelector('#remoteVideo');
 
 var constraints;
-var temp;
 
 var desktopConstraints = {
   audio: false,
@@ -114,50 +110,12 @@ var mobileConstraints = {
 if (/Android|iPhone|iPad/i.test(navigator.userAgent)) constraints = mobileConstraints;
 else constraints = desktopConstraints;
 
-if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-  console.log("enumerateDevices() not supported.");
-}
-
-// List cameras and microphones.
-
-navigator.mediaDevices.enumerateDevices()
-.then(function(devices, hasMedia) {
-  devices.forEach(temp = function(device, hasMedia) {
-    console.log(device.kind + ": " + device.label +
-                " id = " + device.deviceId);
-    if(device.kind === 'videoinput') hasMedia = true;
-    return hasMedia;
-  });
-  mediacheck(temp);
-})
-.catch(function(err) {
-  console.log(err.name + ": " + err.message);
-});
-
-function mediacheck(hasMedia) {
-  if(hasMedia) {
-    navigator.mediaDevices
-    .getUserMedia(constraints)
-    .then(gotStream)
-    .catch(function(e) {
-    alert('getUserMedia() error: ' + e.name);
-    });
-  }
-  else {
-    console.log("Media not available on this device");
-    sendMessage('got user media');
-    if (isInitiator) {
-      maybeStart(hasMedia);
-    }
-  }
-}
-
-/*navigator.mediaDevices
+navigator.mediaDevices
 .getUserMedia(constraints)
 .then(gotStream)
 .catch(function(e) {
-alert('getUserMedia() error: ' + e.name);
-});*/
+  alert('getUserMedia() error: ' + e.name);
+});
 
 function gotStream(stream) {
   console.log('Adding local stream.');
@@ -165,7 +123,7 @@ function gotStream(stream) {
   localVideo.srcObject = stream;
   sendMessage('got user media');
   if (isInitiator) {
-    maybeStart(hasMedia);
+    maybeStart();
   }
 }
 
@@ -181,12 +139,12 @@ console.log('Getting user media with constraints', constraints);
   );
 }*/
 
-function maybeStart(hasMedia) {
+function maybeStart() {
   console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady);
-  if (!isStarted && isChannelReady) {
+  if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
     console.log('>>>>>> creating peer connection');
     createPeerConnection();
-    if (hasMedia) pc.addStream(localStream);
+    pc.addStream(localStream);
     isStarted = true;
     console.log('isInitiator', isInitiator);
     if (isInitiator) {
@@ -205,8 +163,6 @@ function createPeerConnection() {
   try {
     pc = new RTCPeerConnection(null);
     pc.onicecandidate = handleIceCandidate;
-    pc.onaddstream = handleRemoteStreamAdded;
-    pc.onremovestream = handleRemoteStreamRemoved;
     console.log('Created RTCPeerConnnection');
   } catch (e) {
     console.log('Failed to create PeerConnection, exception: ' + e.message);
