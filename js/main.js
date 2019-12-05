@@ -95,6 +95,7 @@ var localVideo = document.querySelector('#localVideo');
 var remoteVideo = document.querySelector('#remoteVideo');
 
 var constraints;
+var temp;
 
 var desktopConstraints = {
   audio: false,
@@ -121,12 +122,13 @@ if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
 
 navigator.mediaDevices.enumerateDevices()
 .then(function(devices, hasMedia) {
-  devices.forEach(function(device, hasMedia) {
+  devices.forEach(temp = function(device, hasMedia) {
     console.log(device.kind + ": " + device.label +
                 " id = " + device.deviceId);
     if(device.kind === 'videoinput') hasMedia = true;
-    mediacheck(hasMedia);
+    return hasMedia;
   });
+  mediacheck(temp);
 })
 .catch(function(err) {
   console.log(err.name + ": " + err.message);
@@ -141,7 +143,6 @@ function mediacheck(hasMedia) {
     alert('getUserMedia() error: ' + e.name);
     });
   }
-  
   else {
     console.log("Media not available on this device");
     sendMessage('got user media');
