@@ -125,10 +125,11 @@ navigator.mediaDevices.enumerateDevices()
   devices.forEach(hasMedia = () => function(device) {
     console.log(device.kind + ": " + device.label +
                 " id = " + device.deviceId);
-    if(device.kind === 'videoinput') hasMedia = true;
-    return hasMedia;
+    if(device.kind === 'videoinput') {
+      mediacheck(true);
+      console.log("hasMedia: ", + hasMedia);
+    }
   });
-  mediacheck(hasMedia);
 })
 .catch(function(err) {
   console.log(err.name + ": " + err.message);
