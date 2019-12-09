@@ -216,8 +216,8 @@ function createPeerConnection(hasMedia) {
     pc.onicecandidate = handleIceCandidate;
     console.log("hasMedia: ", hasMedia);
     if(hasMedia === false) {
-      pc.ontrack = handleRemoteStreamAdded;
-      pc.onremovetrack = handleRemoteStreamRemoved;
+      pc.onaddstream = handleRemoteStreamAdded;
+      pc.onremovestream = handleRemoteStreamRemoved;
     }
     console.log('Created RTCPeerConnnection');
   } catch (e) {
