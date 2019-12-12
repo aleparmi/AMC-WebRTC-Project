@@ -216,8 +216,8 @@ function createPeerConnection(hasMedia) {
     pc.onicecandidate = handleIceCandidate;
     console.log("hasMedia: ", hasMedia);
     if(hasMedia === false) {
-      pc.onaddstream = handleRemoteStreamAdded;
-      pc.onremovestream = handleRemoteStreamRemoved;
+      pc.ontrack = handleRemoteStreamAdded;
+      pc.onremovetrack = handleRemoteStreamRemoved;
     }
     console.log('Created RTCPeerConnnection');
   } catch (e) {
@@ -300,7 +300,7 @@ function onCreateSessionDescriptionError(error) {
 function handleRemoteStreamAdded(event) {
   console.log('Remote stream added.');
   console.log("event: ", event);
-  remoteStream = event.stream;
+  remoteStream = event.streams[0];
   console.log("remotestream: ", remoteStream);
   remoteVideo.srcObject = remoteStream;
 }
